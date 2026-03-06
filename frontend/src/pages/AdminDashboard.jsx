@@ -33,14 +33,14 @@ function AdminDashboard() {
         <p style={{ color: "var(--accent)", fontSize: "12px", fontWeight: "600", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "8px" }}>
           Admin · Control Panel
         </p>
-        <h1 style={{ fontSize: "36px", color: "var(--text)", marginBottom: "6px" }}>
+        <h1 style={{ fontSize:"clamp(24px,5vw,36px)", color:"var(--text)", marginBottom: "6px" }}>
           {name ? `${name.split(" ")[0]}'s Dashboard` : "Admin Dashboard"}
         </h1>
         <p style={{ color: "var(--muted)", fontSize: "15px" }}>Manage submissions, users, and platform configuration</p>
       </div>
 
       {/* Stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns:"repeat(2,1fr)", gap: "16px", marginBottom: "28px" }}>
         {cards.map(({ label, value, color, icon, link }, i) => {
           const inner = (
             <div
@@ -65,7 +65,7 @@ function AdminDashboard() {
         })}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: "24px" }}>
         {/* Pending preview */}
         <div className="card fade-up fade-up-3">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>

@@ -62,7 +62,7 @@ function Compare() {
     <Layout>
       <div style={{ marginBottom:"32px" }} className="fade-up">
         <p style={{ color:"var(--accent)", fontSize:"12px", fontWeight:"600", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"8px" }}>Compare</p>
-        <h1 style={{ fontSize:"36px", color:"var(--text)", marginBottom:"6px" }}>Compare Districts</h1>
+        <h1 style={{ fontSize:"clamp(24px,5vw,36px)", color:"var(--text)", marginBottom:"6px" }}>Compare Districts</h1>
         <p style={{ color:"var(--muted)", fontSize:"15px" }}>Select up to 4 districts to compare commodity prices side by side</p>
       </div>
 
@@ -110,7 +110,7 @@ function Compare() {
       ) : (
         <>
           {/* Basket cost summary */}
-          <div style={{ display:"grid", gridTemplateColumns:`repeat(${selected.length},1fr)`, gap:"16px", marginBottom:"24px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:`repeat(auto-fit,minmax(min(100%,200px),1fr))`, gap:"16px", marginBottom:"24px" }}>
             {basketCost.map(({district,total},i) => {
               const isLowest = i===0;
               const color = COLORS[selected.indexOf(district)];
@@ -157,7 +157,7 @@ function Compare() {
               <h3 style={{ fontSize:"16px", color:"var(--text)" }}>Full Price Table</h3>
             </div>
             <div style={{ overflowX:"auto" }}>
-              <table className="data-table">
+              <div className="table-wrap"><table className="data-table">
                 <thead>
                   <tr>
                     <th>Commodity</th>
@@ -203,6 +203,7 @@ function Compare() {
                   })}
                 </tbody>
               </table>
+</div>
             </div>
           </div>
         </>
@@ -210,5 +211,6 @@ function Compare() {
     </Layout>
   );
 }
+
 
 export default Compare;

@@ -55,11 +55,11 @@ function Export() {
     <Layout>
       <div style={{ marginBottom:"32px" }} className="fade-up">
         <p style={{ color:"var(--accent)", fontSize:"12px", fontWeight:"600", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"8px" }}>Admin · Export</p>
-        <h1 style={{ fontSize:"36px", color:"var(--text)", marginBottom:"6px" }}>Export Data</h1>
+        <h1 style={{ fontSize:"clamp(24px,5vw,36px)", color:"var(--text)", marginBottom:"6px" }}>Export Data</h1>
         <p style={{ color:"var(--muted)", fontSize:"15px" }}>Download approved price data as CSV with optional filters</p>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"380px 1fr", gap:"24px", alignItems:"start" }}>
+      <div style={{ display:"grid", gridTemplateColumns:"min(380px,100%) 1fr", gap:"24px", alignItems:"start" }}>
         {/* Filters panel */}
         <div className="card fade-up fade-up-1" style={{ borderTop:"2px solid var(--accent)" }}>
           <h3 style={{ fontSize:"16px", color:"var(--text)", marginBottom:"20px" }}>Export Filters</h3>
@@ -124,7 +124,7 @@ function Export() {
               <div style={{ padding:"14px 20px", borderBottom:"1px solid var(--border)" }}>
                 <p style={{ fontSize:"14px", color:"var(--text)", fontWeight:"600" }}>Preview (first 10 rows)</p>
               </div>
-              <table className="data-table">
+              <div className="table-wrap"><table className="data-table">
                 <thead>
                   <tr>
                     <th>Commodity</th><th>Market</th><th>District</th><th>Price</th><th>Date</th>
@@ -142,6 +142,7 @@ function Export() {
                   ))}
                 </tbody>
               </table>
+</div>
             </div>
           )}
         </div>

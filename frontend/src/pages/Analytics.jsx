@@ -4,208 +4,204 @@ import api from "../api/axios";
 import Layout from "../components/Layout";
 import { isAdmin } from "../utils/auth";
 
-const COMMODITY_ICONS = { "Tomato":"🍅","Onion":"🧅","Potato":"🥔","Rice (Raw)":"🍚","Rice (Boiled)":"🍚","Wheat":"🌾","Tur Dal":"🫘","Chana Dal":"🫘","Moong Dal":"🫘","Groundnut Oil":"🫒","Coconut Oil":"🥥","Milk":"🥛","Eggs (dozen)":"🥚","Banana":"🍌","Brinjal":"🍆","Carrot":"🥕" };
-const getIcon = n => COMMODITY_ICONS[n] || "🌿";
+const ICONS = {"Tomato":"🍅","Onion":"🧅","Potato":"🥔","Rice (Raw)":"🍚","Rice (Boiled)":"🍚","Wheat":"🌾","Tur Dal":"🫘","Chana Dal":"🫘","Moong Dal":"🫘","Groundnut Oil":"🫒","Coconut Oil":"🥥","Milk":"🥛","Eggs (dozen)":"🥚","Banana":"🍌","Brinjal":"🍆","Carrot":"🥕"};
+const getIcon = n => ICONS[n] || "🌿";
 const COLORS = ["#f59e0b","#10b981","#6366f1","#e11d48","#06b6d4","#8b5cf6","#f97316","#84cc16"];
+
+const Tip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"10px", padding:"10px 14px" }}>
+      <p style={{ color:"var(--muted)", fontSize:"11px", marginBottom:"4px" }}>{label}</p>
+      {payload.map(p => <p key={p.name} style={{ color:p.color, fontSize:"13px", fontWeight:"600" }}>₹{p.value}</p>)}
+    </div>
+  );
+};
 
 function Analytics() {
   const admin = isAdmin();
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCommodity, setSelectedCommodity] = useState("Tomato");
+  const [sel, setSel] = useState("Tomato");
 
   useEffect(() => {
     api.get("/price/all").then(r => { setPrices(r.data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  // Commodity distribution for pie chart
-  const commodityCount = prices.reduce((acc, p) => { acc[p.commodity] = (acc[p.commodity] || 0) + 1; return acc; }, {});
-  const pieData = Object.entries(commodityCount).sort((a,b) => b[1]-a[1]).slice(0,8).map(([name, value]) => ({ name, value }));
-
-  // Price trend for selected commodity (group by date)
-  const trendData = (() => {
-    const filtered = prices.filter(p => p.commodity === selectedCommodity);
-    const byDate = filtered.reduce((acc, p) => {
-      const date = new Date(p.createdAt).toLocaleDateString("en-IN", { day:"numeric", month:"short" });
-      if (!acc[date]) acc[date] = { prices: [], date };
-      acc[date].prices.push(p.price);
-      return acc;
-    }, {});
-    return Object.values(byDate).map(({ date, prices }) => ({
-      date, avg: Math.round(prices.reduce((s,v)=>s+v,0)/prices.length * 10)/10,
-      min: Math.min(...prices), max: Math.max(...prices),
-    })).slice(-14);
-  })();
-
-  // District price comparison for selected commodity
-  const districtData = (() => {
-    const filtered = prices.filter(p => p.commodity === selectedCommodity);
-    const byDistrict = filtered.reduce((acc, p) => {
-      if (!acc[p.district]) acc[p.district] = [];
-      acc[p.district].push(p.price);
-      return acc;
-    }, {});
-    return Object.entries(byDistrict).map(([district, ps]) => ({
-      district: district.length > 10 ? district.slice(0,10)+"…" : district,
-      avg: Math.round(ps.reduce((s,v)=>s+v,0)/ps.length * 10)/10,
-    })).sort((a,b) => a.avg - b.avg).slice(0,10);
-  })();
-
-  // Top expensive + cheapest right now
-  const latestByDistrict = (() => {
-    const filtered = prices.filter(p => p.commodity === selectedCommodity);
-    const map = {};
-    filtered.forEach(p => { if (!map[p.district] || new Date(p.createdAt) > new Date(map[p.district].createdAt)) map[p.district] = p; });
-    return Object.values(map).sort((a,b) => a.price - b.price);
-  })();
-
-  // Stats
-  const allPricesForCommodity = prices.filter(p => p.commodity === selectedCommodity).map(p => p.price);
-  const avgPrice = allPricesForCommodity.length ? (allPricesForCommodity.reduce((s,v)=>s+v,0)/allPricesForCommodity.length).toFixed(1) : "—";
-  const minPrice = allPricesForCommodity.length ? Math.min(...allPricesForCommodity) : "—";
-  const maxPrice = allPricesForCommodity.length ? Math.max(...allPricesForCommodity) : "—";
-
   const allCommodities = [...new Set(prices.map(p => p.commodity))].sort();
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"10px", padding:"12px 16px" }}>
-        <p style={{ color:"var(--muted)", fontSize:"12px", marginBottom:"6px" }}>{label}</p>
-        {payload.map(p => <p key={p.name} style={{ color:p.color, fontSize:"13px", fontWeight:"600" }}>₹{p.value}</p>)}
-      </div>
-    );
-  };
+  const commodityCount = prices.reduce((a,p) => { a[p.commodity]=(a[p.commodity]||0)+1; return a; }, {});
+  const pieData = Object.entries(commodityCount).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,value])=>({name,value}));
+
+  const trendData = (() => {
+    const byDate = {};
+    prices.filter(p=>p.commodity===sel).forEach(p => {
+      const d = new Date(p.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+      if (!byDate[d]) byDate[d] = { date:d, prices:[] };
+      byDate[d].prices.push(p.price);
+    });
+    return Object.values(byDate).slice(-14).map(({date,prices}) => ({
+      date, avg:Math.round(prices.reduce((s,v)=>s+v,0)/prices.length*10)/10,
+      min:Math.min(...prices), max:Math.max(...prices),
+    }));
+  })();
+
+  const districtData = (() => {
+    const byD = {};
+    prices.filter(p=>p.commodity===sel).forEach(p => { if(!byD[p.district]) byD[p.district]=[]; byD[p.district].push(p.price); });
+    return Object.entries(byD).map(([d,ps])=>({
+      district: d.length>8 ? d.slice(0,8)+"…" : d,
+      avg: Math.round(ps.reduce((s,v)=>s+v,0)/ps.length*10)/10,
+    })).sort((a,b)=>a.avg-b.avg).slice(0,8);
+  })();
+
+  const selPrices = prices.filter(p=>p.commodity===sel).map(p=>p.price);
+  const avg = selPrices.length ? (selPrices.reduce((s,v)=>s+v,0)/selPrices.length).toFixed(1) : "—";
+  const min = selPrices.length ? Math.min(...selPrices) : "—";
+  const max = selPrices.length ? Math.max(...selPrices) : "—";
+
+  const latestByDistrict = (() => {
+    const map = {};
+    prices.filter(p=>p.commodity===sel).forEach(p => {
+      if (!map[p.district] || new Date(p.createdAt) > new Date(map[p.district].createdAt)) map[p.district] = p;
+    });
+    return Object.values(map).sort((a,b)=>a.price-b.price);
+  })();
 
   return (
     <Layout>
-      <div style={{ marginBottom:"32px" }} className="fade-up">
-        <p style={{ color:"var(--accent)", fontSize:"12px", fontWeight:"600", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"8px" }}>Insights</p>
-        <h1 style={{ fontSize:"36px", color:"var(--text)", marginBottom:"6px" }}>Analytics</h1>
-        <p style={{ color:"var(--muted)", fontSize:"15px" }}>Price trends, district comparisons and market insights</p>
+      <div style={{ marginBottom:"24px" }} className="fade-up">
+        <p style={{ color:"var(--accent)", fontSize:"12px", fontWeight:"600", letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:"6px" }}>Insights</p>
+        <h1 style={{ fontSize:"clamp(22px,5vw,36px)", color:"var(--text)", marginBottom:"4px" }}>Analytics</h1>
+        <p style={{ color:"var(--muted)", fontSize:"14px" }}>Price trends, district comparisons and market insights</p>
       </div>
 
       {loading ? (
-        <div style={{ textAlign:"center", padding:"80px", color:"var(--muted)" }}>Loading data…</div>
-      ) : (
-        <>
-          {/* Commodity selector */}
-          <div className="card fade-up fade-up-1" style={{ marginBottom:"24px", padding:"16px 20px" }}>
-            <p style={{ fontSize:"12px", color:"var(--muted)", fontWeight:"600", marginBottom:"10px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Select Commodity to Analyse</p>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:"8px" }}>
-              {allCommodities.map(c => (
-                <button key={c} onClick={() => setSelectedCommodity(c)} style={{
-                  padding:"6px 14px", borderRadius:"99px", cursor:"pointer", fontSize:"13px", fontWeight: selectedCommodity===c ? "600" : "400",
-                  border:`1px solid ${selectedCommodity===c ? "var(--accent)" : "var(--border)"}`,
-                  background: selectedCommodity===c ? "rgba(245,158,11,0.15)" : "transparent",
-                  color: selectedCommodity===c ? "var(--accent)" : "var(--muted)", transition:"all 0.15s",
-                }}>{getIcon(c)} {c}</button>
-              ))}
-            </div>
-          </div>
+        <div style={{ textAlign:"center", padding:"60px", color:"var(--muted)" }}>Loading…</div>
+      ) : (<>
 
-          {/* Summary stats */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"16px", marginBottom:"24px" }}>
-            {[
-              { label:"Avg Price",   value:`₹${avgPrice}`, color:"#f59e0b", icon:"📊" },
-              { label:"Lowest",      value:`₹${minPrice}`, color:"#10b981", icon:"↓" },
-              { label:"Highest",     value:`₹${maxPrice}`, color:"#ef4444", icon:"↑" },
-              { label:"Data Points", value:allPricesForCommodity.length, color:"#6366f1", icon:"🗂" },
-            ].map(({ label, value, color, icon }, i) => (
-              <div key={label} className={`card fade-up fade-up-${i+1}`} style={{ borderLeft:`3px solid ${color}` }}>
-                <span style={{ fontSize:"18px", display:"block", marginBottom:"8px" }}>{icon}</span>
-                <p style={{ color:"var(--muted)", fontSize:"12px", marginBottom:"4px" }}>{label}</p>
-                <p style={{ fontFamily:"'DM Serif Display',serif", fontSize:"28px", color:"var(--text)", lineHeight:1 }}>{value}</p>
-              </div>
+        {/* Commodity selector — scrolls horizontally on mobile */}
+        <div className="card fade-up fade-up-1" style={{ marginBottom:"20px", padding:"14px 16px" }}>
+          <p style={{ fontSize:"11px", color:"var(--muted)", fontWeight:"700", marginBottom:"10px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Select Commodity</p>
+          <div style={{ display:"flex", overflowX:"auto", gap:"8px", paddingBottom:"4px", WebkitOverflowScrolling:"touch" }}>
+            {allCommodities.map(c => (
+              <button key={c} onClick={() => setSel(c)} style={{
+                padding:"6px 12px", borderRadius:"99px", cursor:"pointer", fontSize:"12px", fontWeight:sel===c?"700":"400",
+                border:`1px solid ${sel===c?"var(--accent)":"var(--border)"}`,
+                background:sel===c?"rgba(245,158,11,0.15)":"transparent",
+                color:sel===c?"var(--accent)":"var(--muted)",
+                whiteSpace:"nowrap", flexShrink:0, transition:"all 0.15s",
+              }}>{getIcon(c)} {c}</button>
             ))}
           </div>
+        </div>
 
-          <div style={{ display:"grid", gridTemplateColumns:"1.4fr 1fr", gap:"24px", marginBottom:"24px" }}>
-            {/* Price trend line chart */}
-            <div className="card fade-up fade-up-2">
-              <h3 style={{ fontSize:"16px", color:"var(--text)", fontWeight:"600", marginBottom:"6px" }}>
-                {getIcon(selectedCommodity)} {selectedCommodity} — Price Trend
-              </h3>
-              <p style={{ fontSize:"12px", color:"var(--muted)", marginBottom:"20px" }}>Average price over last 14 days</p>
-              {trendData.length < 2 ? (
-                <div style={{ textAlign:"center", padding:"40px", color:"var(--muted)", fontSize:"13px" }}>Not enough data for trend</div>
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
+        {/* Stat cards — 2 cols on mobile */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:"10px", marginBottom:"20px" }}>
+          {[
+            { label:"Avg Price",   value:`₹${avg}`, color:"#f59e0b", icon:"📊" },
+            { label:"Lowest",      value:`₹${min}`, color:"#10b981", icon:"↓" },
+            { label:"Highest",     value:`₹${max}`, color:"#ef4444", icon:"↑" },
+            { label:"Data Points", value:selPrices.length, color:"#6366f1", icon:"🗂" },
+          ].map(({label,value,color,icon},i) => (
+            <div key={label} className={`card fade-up fade-up-${i+1}`} style={{ borderLeft:`3px solid ${color}`, padding:"14px" }}>
+              <span style={{ fontSize:"16px", display:"block", marginBottom:"6px" }}>{icon}</span>
+              <p style={{ color:"var(--muted)", fontSize:"11px", marginBottom:"3px" }}>{label}</p>
+              <p style={{ fontFamily:"'DM Serif Display',serif", fontSize:"clamp(20px,4vw,28px)", color:"var(--text)", lineHeight:1 }}>{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Trend chart — full width, scrollable */}
+        <div className="card fade-up fade-up-2" style={{ marginBottom:"16px", padding:"16px" }}>
+          <h3 style={{ fontSize:"15px", color:"var(--text)", marginBottom:"2px" }}>{getIcon(sel)} {sel} — Price Trend</h3>
+          <p style={{ fontSize:"11px", color:"var(--muted)", marginBottom:"14px" }}>Last 14 days avg / min / max</p>
+          <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+            {trendData.length < 2 ? (
+              <p style={{ textAlign:"center", padding:"30px", color:"var(--muted)", fontSize:"13px" }}>Not enough data yet</p>
+            ) : (
+              <div style={{ minWidth:"300px" }}>
+                <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={trendData}>
                     <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fill:"var(--muted)", fontSize:11 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill:"var(--muted)", fontSize:11 }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v}`} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="avg" stroke="var(--accent)" strokeWidth={2.5} dot={{ fill:"var(--accent)", r:4 }} name="Avg ₹" />
-                    <Line type="monotone" dataKey="min" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Min ₹" />
-                    <Line type="monotone" dataKey="max" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Max ₹" />
+                    <XAxis dataKey="date" tick={{ fill:"var(--muted)", fontSize:10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill:"var(--muted)", fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v}`} width={40} />
+                    <Tooltip content={<Tip />} />
+                    <Line type="monotone" dataKey="avg" stroke="var(--accent)" strokeWidth={2.5} dot={{ r:3 }} name="Avg" />
+                    <Line type="monotone" dataKey="min" stroke="#10b981" strokeWidth={1.5} dot={false} strokeDasharray="4 2" name="Min" />
+                    <Line type="monotone" dataKey="max" stroke="#ef4444" strokeWidth={1.5} dot={false} strokeDasharray="4 2" name="Max" />
                   </LineChart>
                 </ResponsiveContainer>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-            {/* Commodity distribution pie */}
-            <div className="card fade-up fade-up-3">
-              <h3 style={{ fontSize:"16px", color:"var(--text)", fontWeight:"600", marginBottom:"6px" }}>Submission Mix</h3>
-              <p style={{ fontSize:"12px", color:"var(--muted)", marginBottom:"16px" }}>Top commodities by submission count</p>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                    {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip formatter={(v, n) => [`${v} entries`, n]} contentStyle={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"10px" }} />
-                  <Legend iconSize={10} iconType="circle" wrapperStyle={{ fontSize:"11px", color:"var(--muted)" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+        {/* Pie + District — stack on mobile */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:"16px", marginBottom:"16px" }}>
+          {/* Pie chart */}
+          <div className="card fade-up fade-up-3" style={{ padding:"16px" }}>
+            <h3 style={{ fontSize:"15px", color:"var(--text)", marginBottom:"2px" }}>Submission Mix</h3>
+            <p style={{ fontSize:"11px", color:"var(--muted)", marginBottom:"12px" }}>Top commodities by count</p>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                  {pieData.map((_,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={(v,n) => [`${v}`, n]} contentStyle={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"10px", fontSize:"12px" }} />
+                <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize:"10px", color:"var(--muted)" }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
 
           {/* District bar chart */}
-          <div className="card fade-up fade-up-4" style={{ marginBottom:"24px" }}>
-            <h3 style={{ fontSize:"16px", color:"var(--text)", fontWeight:"600", marginBottom:"6px" }}>
-              District Price Comparison — {selectedCommodity}
-            </h3>
-            <p style={{ fontSize:"12px", color:"var(--muted)", marginBottom:"20px" }}>Average price per district (sorted lowest → highest)</p>
-            {districtData.length === 0 ? (
-              <p style={{ color:"var(--muted)", textAlign:"center", padding:"40px", fontSize:"13px" }}>No data for this commodity</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={districtData} barSize={28}>
-                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="district" tick={{ fill:"var(--muted)", fontSize:11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill:"var(--muted)", fontSize:11 }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v}`} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="avg" fill="var(--accent)" radius={[6,6,0,0]} name="Avg ₹" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          {/* Cheapest vs expensive districts */}
-          {latestByDistrict.length > 0 && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"20px" }}>
-              <div className="card fade-up">
-                <h3 style={{ fontSize:"15px", color:"#10b981", fontWeight:"600", marginBottom:"14px" }}>✅ Cheapest Districts</h3>
-                {latestByDistrict.slice(0,5).map(p => (
-                  <div key={p._id} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid var(--border)" }}>
-                    <span style={{ fontSize:"13px", color:"var(--text)" }}>{p.district}</span>
-                    <span style={{ fontSize:"14px", fontWeight:"600", color:"#10b981" }}>₹{p.price}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="card fade-up">
-                <h3 style={{ fontSize:"15px", color:"#ef4444", fontWeight:"600", marginBottom:"14px" }}>⚠️ Most Expensive</h3>
-                {[...latestByDistrict].reverse().slice(0,5).map(p => (
-                  <div key={p._id} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid var(--border)" }}>
-                    <span style={{ fontSize:"13px", color:"var(--text)" }}>{p.district}</span>
-                    <span style={{ fontSize:"14px", fontWeight:"600", color:"#ef4444" }}>₹{p.price}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="card fade-up fade-up-4" style={{ padding:"16px" }}>
+            <h3 style={{ fontSize:"15px", color:"var(--text)", marginBottom:"2px" }}>District Comparison</h3>
+            <p style={{ fontSize:"11px", color:"var(--muted)", marginBottom:"12px" }}>{sel} — cheapest first</p>
+            <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+              {districtData.length === 0 ? (
+                <p style={{ color:"var(--muted)", textAlign:"center", padding:"30px", fontSize:"13px" }}>No data yet</p>
+              ) : (
+                <div style={{ minWidth:"280px" }}>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <BarChart data={districtData} barSize={20}>
+                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="district" tick={{ fill:"var(--muted)", fontSize:9 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill:"var(--muted)", fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={v=>`₹${v}`} width={38} />
+                      <Tooltip content={<Tip />} />
+                      <Bar dataKey="avg" fill="var(--accent)" radius={[4,4,0,0]} name="Avg ₹" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
-          )}
-        </>
-      )}
+          </div>
+        </div>
+
+        {/* Cheapest / Expensive */}
+        {latestByDistrict.length > 0 && (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"14px" }}>
+            <div className="card fade-up" style={{ padding:"16px" }}>
+              <h3 style={{ fontSize:"14px", color:"#10b981", marginBottom:"12px" }}>✅ Cheapest Districts</h3>
+              {latestByDistrict.slice(0,5).map(p => (
+                <div key={p._id} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid var(--border)" }}>
+                  <span style={{ fontSize:"13px", color:"var(--text)" }}>{p.district}</span>
+                  <span style={{ fontSize:"13px", fontWeight:"600", color:"#10b981" }}>₹{p.price}</span>
+                </div>
+              ))}
+            </div>
+            <div className="card fade-up" style={{ padding:"16px" }}>
+              <h3 style={{ fontSize:"14px", color:"#ef4444", marginBottom:"12px" }}>⚠️ Most Expensive</h3>
+              {[...latestByDistrict].reverse().slice(0,5).map(p => (
+                <div key={p._id} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid var(--border)" }}>
+                  <span style={{ fontSize:"13px", color:"var(--text)" }}>{p.district}</span>
+                  <span style={{ fontSize:"13px", fontWeight:"600", color:"#ef4444" }}>₹{p.price}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>)}
     </Layout>
   );
 }
