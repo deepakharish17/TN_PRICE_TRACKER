@@ -266,7 +266,7 @@ npm run dev            # runs on :5173
 
 Built by **Deepak Harish** — open to feedback, collaborations, and opportunities!
 
-- 💼 LinkedIn: [your-linkedin-url](https://www.linkedin.com/in/deepak-harish-t-m/)
+- 💼 LinkedIn: [(https://www.linkedin.com/in/deepak-harish-t-m/)](https://www.linkedin.com/in/deepak-harish-t-m/)
 - 🐙 GitHub: [github.com/deepakharish17](https://github.com/deepakharish17)
 - 📧 Email: harishdeepak35@gmail.com
 
