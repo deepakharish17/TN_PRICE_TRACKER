@@ -1,7 +1,6 @@
 const express  = require("express");
 const mongoose = require("mongoose");
 const cors     = require("cors");
-const scraper = require("./scraper");
 require("dotenv").config();
 
 const app = express();
@@ -19,6 +18,10 @@ app.use("/api/announcements", require("./routes/announcementRoutes"));
 mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/tn-price-monitor")
   .then(() => {
     console.log("✅ MongoDB connected");
+
+    // Start scraper — runs immediately + every day at 6:00 AM IST
+    require("./scraper");
+
     app.listen(process.env.PORT || 5000, () =>
       console.log(`🚀 Server running on port ${process.env.PORT || 5000}`)
     );
