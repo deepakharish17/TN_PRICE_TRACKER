@@ -19,6 +19,23 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET /api/price/all — alias used by frontend
+router.get("/all", async (req, res) => {
+  try {
+    const { district, commodity, status, source } = req.query;
+    const filter = {};
+    if (district)  filter.district  = { $regex: new RegExp(district,  "i") };
+    if (commodity) filter.commodity = { $regex: new RegExp(commodity, "i") };
+    if (status)    filter.status    = status;
+    if (source)    filter.source    = source;
+
+    const prices = await Price.find(filter).sort({ createdAt: -1 }).limit(500);
+    res.json(prices);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/price/districts
 router.get("/districts", async (req, res) => {
   try {
