@@ -1,21 +1,15 @@
 const mongoose = require("mongoose");
 
-const priceSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
-  commodity: String,
+const PriceSchema = new mongoose.Schema({
+  commodity:  String,
   marketName: String,
-  district: String,
-  price: Number,
-  status: {
-    type: String,
-    enum: ["pending", "approved", "rejected"],
-    default: "pending"
-  },
-  rejectionReason: String,
-  editedByAdmin: { type: Boolean, default: false }
+  district:   String,
+  price:      Number,
+  minPrice:   Number,
+  maxPrice:   Number,
+  status:     { type: String, default: "approved" },
+  source:     { type: String, default: "scraped" },
+  userId:     { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 }, { timestamps: true });
 
-module.exports = mongoose.model("Price", priceSchema);
+module.exports = mongoose.models.Price || mongoose.model("Price", PriceSchema);
