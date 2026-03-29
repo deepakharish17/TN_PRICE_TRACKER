@@ -12,7 +12,12 @@ router.get("/", async (req, res) => {
     if (status)    filter.status    = status;
     if (source)    filter.source    = source;
 
-    const prices = await Price.find(filter).sort({ createdAt: -1 }).limit(500);
+    // Only today's prices
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    filter.createdAt = { $gte: todayStart };
+
+    const prices = await Price.find(filter).sort({ createdAt: -1 }).limit(5000);
     res.json(prices);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -29,7 +34,12 @@ router.get("/all", async (req, res) => {
     if (status)    filter.status    = status;
     if (source)    filter.source    = source;
 
-    const prices = await Price.find(filter).sort({ createdAt: -1 }).limit(500);
+    // Only today's prices
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    filter.createdAt = { $gte: todayStart };
+
+    const prices = await Price.find(filter).sort({ createdAt: -1 }).limit(5000);
     res.json(prices);
   } catch (err) {
     res.status(500).json({ message: err.message });
