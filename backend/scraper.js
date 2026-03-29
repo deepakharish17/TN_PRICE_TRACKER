@@ -80,10 +80,9 @@ async function scrapeDistrict(district, slug) {
       const cols = $(row).find("td");
       if (cols.length < 4) return;
 
-      // col[0] = image, col[1] = name, col[2] = retail price, col[3] = range, col[4] = unit
       const rawName   = $(cols[1]).text().trim();
       const retailTxt = $(cols[2]).text().replace(/[^\d.]/g, "").trim();
-      const rangeTxt  = $(cols[3]).text().trim(); // e.g. "₹17 - 21"
+      const rangeTxt  = $(cols[3]).text().trim();
 
       if (!rawName || !retailTxt) return;
 
@@ -93,7 +92,6 @@ async function scrapeDistrict(district, slug) {
 
       if (isNaN(retailPrice) || retailPrice <= 0) return;
 
-      // Parse range e.g. "₹17 - 21"
       const rangeParts = rangeTxt.replace(/₹/g, "").split("-").map(s => parseFloat(s.trim()));
       const minPrice = rangeParts[0] || retailPrice;
       const maxPrice = rangeParts[1] || retailPrice;
@@ -126,11 +124,26 @@ async function scrapeAll() {
     console.log("✅ MongoDB connected");
   }
 
+  // 1. Delete today's existing scraped data (avoid duplicates)
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   await Price.deleteMany({ source: "scraped", createdAt: { $gte: todayStart } });
   console.log("🗑️  Cleared today's old scraped data");
 
+  // 2. Delete data exactly 5 days old (rolling window — keeps last 4 days intact)
+  const fiveDaysAgoStart = new Date();
+  fiveDaysAgoStart.setDate(fiveDaysAgoStart.getDate() - 5);
+  fiveDaysAgoStart.setHours(0, 0, 0, 0);
+  const fiveDaysAgoEnd = new Date(fiveDaysAgoStart);
+  fiveDaysAgoEnd.setHours(23, 59, 59, 999);
+
+  const old = await Price.deleteMany({
+    source: "scraped",
+    createdAt: { $gte: fiveDaysAgoStart, $lte: fiveDaysAgoEnd },
+  });
+  console.log(`🗑️  Deleted ${old.deletedCount} records from 5 days ago`);
+
+  // 3. Scrape fresh data for today
   let totalInserted = 0;
   const failed = [];
 
